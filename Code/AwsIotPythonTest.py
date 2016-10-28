@@ -43,10 +43,12 @@ def customCallback(client, userdata, message):
     print("--------------\n\n")
 
 # Usage
-usageInfo = """Usage:
-
-Use certificate based mutual authentication:
+usageInfo = """
+Usage 1 - Use certificate based mutual authentication:
 python AwsIotPythonTest.py -e <endpoint> -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath>
+
+Usage 2 - Use certificate based mutual authentication with action:
+python AwsIotPythonTest.py -e <endpoint> -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath> -a <action>
 
 Type "python AwsIotPythonTest.py -h" for available options.
 """
@@ -63,7 +65,9 @@ helpInfo = """
 -h, --help
     Help information
 -d, --debug
-    Print debug messages.    
+    Print debug messages.
+-a, --action
+    publish or subscribe
     
 """
 
@@ -75,13 +79,14 @@ host = ""
 rootCAPath = ""
 certificatePath = ""
 privateKeyPath = ""
-debug = False
+debug = False                           # for -d option.
+action = ""                             # for -a option that is publish, subscribe, or default "".        
 
 try:
     opts, args = getopt.getopt(
         sys.argv[1:], 
-        "dhwe:k:c:r:", 
-        ["help", "endpoint=", "key=", "cert=", "rootCA="])
+        "dhwe:k:c:r:a:", 
+        ["help", "endpoint=", "key=", "cert=", "rootCA=", "action="])
         
     if len(opts) == 0:
         raise getopt.GetoptError("No input parameters!")
@@ -99,6 +104,8 @@ try:
             privateKeyPath = arg
         if opt in ("-d", "--debug"):
             debug = True
+        if opt in ("-a", "--action"):
+            action = arg
             
 except getopt.GetoptError:
     print(usageInfo)
@@ -146,7 +153,11 @@ logger.addHandler(streamHandler)
 #
 
 myAWSIoTMQTTClient = None
-myAWSIoTMQTTClient = AWSIoTMQTTClient("AwsIotPythonTest")
+if action == "":
+    myAWSIoTMQTTClient = AWSIoTMQTTClient("AwsIotPythonTest")
+else:    
+    myAWSIoTMQTTClient = AWSIoTMQTTClient("AwsIotPythonTest."+action)
+    
 myAWSIoTMQTTClient.configureEndpoint(host, 8883)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
 
@@ -165,8 +176,9 @@ myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 #
 
 myAWSIoTMQTTClient.connect()
-myAWSIoTMQTTClient.subscribe("sdk/test/Python", 1, customCallback)
-time.sleep(2)
+if action in ("", "subscribe"):
+    myAWSIoTMQTTClient.subscribe("sdk/test/Python", 1, customCallback)
+    time.sleep(2)
 
 #
 # Publish to the same topic in a loop forever
@@ -174,7 +186,9 @@ time.sleep(2)
 
 loopCount = 0
 while True:
-    #print ("Calling myAWSIoTMQTTClient.publish()")
-    myAWSIoTMQTTClient.publish("sdk/test/Python", "New Message " + str(loopCount), 1)
-    loopCount += 1
+    if action in ("", "publish"):
+        message = "New Message " + str(loopCount)
+        print ("Publish the message, %s" % message);
+        myAWSIoTMQTTClient.publish("sdk/test/Python", message, 1)
+        loopCount += 1
     time.sleep(1)
