@@ -70,7 +70,9 @@ helpInfo = """
 -a, --action
     publish or subscribe
 -i, --clientid
-    Client ID    
+    Client ID   
+-t, --topic
+    Topic     
 """
 
 #
