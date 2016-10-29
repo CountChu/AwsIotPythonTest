@@ -49,7 +49,7 @@ Usage 1 - Use certificate based mutual authentication:
 python AwsIotPythonTest.py -e <endpoint> -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath>
 
 Usage 2 - Use certificate based mutual authentication with action:
-python AwsIotPythonTest.py -e <endpoint> -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath> -a <action>
+python AwsIotPythonTest.py -e <endpoint> -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath> -a <action> (-i <clientid>)
 
 Type "python AwsIotPythonTest.py -h" for available options.
 """
@@ -69,7 +69,8 @@ helpInfo = """
     Print debug messages.
 -a, --action
     publish or subscribe
-    
+-i, --clientid
+    Client ID    
 """
 
 #
@@ -82,12 +83,13 @@ certificatePath = ""
 privateKeyPath = ""
 debug = False                           # for -d option.
 action = ""                             # for -a option that is publish, subscribe, or default "".        
+clientId = ""                           # for -i option.
 
 try:
     opts, args = getopt.getopt(
         sys.argv[1:], 
-        "dhwe:k:c:r:a:", 
-        ["help", "endpoint=", "key=", "cert=", "rootCA=", "action="])
+        "dhwe:k:c:r:a:i:", 
+        ["help", "endpoint=", "key=", "cert=", "rootCA=", "action=", "clientid="])
         
     if len(opts) == 0:
         raise getopt.GetoptError("No input parameters!")
@@ -107,6 +109,8 @@ try:
             debug = True
         if opt in ("-a", "--action"):
             action = arg
+        if opt in ("-i", "--clientid"):
+            clientId = arg
             
 except getopt.GetoptError:
     print(usageInfo)
@@ -150,6 +154,15 @@ streamHandler.setFormatter(formatter)
 logger.addHandler(streamHandler)
 
 #
+# Specify topic
+# 
+
+topic = "sdk/test/Python"
+#if clientId != "":
+#    topic = topic + "/" + clientId
+print ("Topic: %s" % topic)    
+
+#
 # Specify Client ID.
 #
 # "The message broker does not allow two clients with the same client ID to stay 
@@ -159,9 +172,10 @@ logger.addHandler(streamHandler)
 # disconnects one of the clients."
 #
 
-clientId = "AwsIotPythonTest"
-if action != "":
-    clientId = clientId + "." + action     
+if clientId == "":
+    clientId = "AwsIotPythonTest"
+    if action != "":
+        clientId = clientId + "." + action     
 print ("Client ID: %s" % clientId)
 
 #
@@ -187,8 +201,6 @@ myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 # Connect and subscribe to AWS IoT
 #
 
-topic = "sdk/test/Python"
-
 myAWSIoTMQTTClient.connect()
 if action in ("", "subscribe"):
     myAWSIoTMQTTClient.subscribe(topic, 1, customCallback)
@@ -202,7 +214,7 @@ loopCount = 0
 while True:
     if action in ("", "publish"):
         temperature = uniform (20.0, 40.0)
-        message = "Message %d: Temperature = %.1f" % (loopCount, temperature)
+        message = "Client ID %s - Seq %d: Temperature = %.1f" % (clientId, loopCount, temperature)
         print ("Publish the message, %s" % message);
         myAWSIoTMQTTClient.publish(topic, message, 1)
         loopCount += 1
