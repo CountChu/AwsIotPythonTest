@@ -33,6 +33,7 @@ import sys
 import logging
 import time
 import getopt
+from random import uniform
 
 # Custom MQTT message callback
 def customCallback(client, userdata, message):
@@ -40,7 +41,7 @@ def customCallback(client, userdata, message):
     print(message.payload)
     print("from topic: ")
     print(message.topic)
-    print("--------------\n\n")
+    print("--------------\n")
 
 # Usage
 usageInfo = """
@@ -149,14 +150,25 @@ streamHandler.setFormatter(formatter)
 logger.addHandler(streamHandler)
 
 #
+# Specify Client ID.
+#
+# "The message broker does not allow two clients with the same client ID to stay 
+# connected at the same time.
+#
+# "After the second client connects, the broker detects this case and
+# disconnects one of the clients."
+#
+
+clientId = "AwsIotPythonTest"
+if action != "":
+    clientId = clientId + "." + action     
+print ("Client ID: %s" % clientId)
+
+#
 # Init AWSIoTMQTTClient
 #
 
-myAWSIoTMQTTClient = None
-if action == "":
-    myAWSIoTMQTTClient = AWSIoTMQTTClient("AwsIotPythonTest")
-else:    
-    myAWSIoTMQTTClient = AWSIoTMQTTClient("AwsIotPythonTest."+action)
+myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
     
 myAWSIoTMQTTClient.configureEndpoint(host, 8883)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
@@ -175,9 +187,11 @@ myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 # Connect and subscribe to AWS IoT
 #
 
+topic = "sdk/test/Python"
+
 myAWSIoTMQTTClient.connect()
 if action in ("", "subscribe"):
-    myAWSIoTMQTTClient.subscribe("sdk/test/Python", 1, customCallback)
+    myAWSIoTMQTTClient.subscribe(topic, 1, customCallback)
     time.sleep(2)
 
 #
@@ -187,8 +201,9 @@ if action in ("", "subscribe"):
 loopCount = 0
 while True:
     if action in ("", "publish"):
-        message = "New Message " + str(loopCount)
+        temperature = uniform (20.0, 40.0)
+        message = "Message %d: Temperature = %.1f" % (loopCount, temperature)
         print ("Publish the message, %s" % message);
-        myAWSIoTMQTTClient.publish("sdk/test/Python", message, 1)
+        myAWSIoTMQTTClient.publish(topic, message, 1)
         loopCount += 1
     time.sleep(1)
