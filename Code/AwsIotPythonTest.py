@@ -84,12 +84,22 @@ privateKeyPath = ""
 debug = False                           # for -d option.
 action = ""                             # for -a option that is publish, subscribe, or default "".        
 clientId = ""                           # for -i option.
+topic = "sdk/test/Python"               # for -t option.
 
 try:
     opts, args = getopt.getopt(
         sys.argv[1:], 
-        "dhwe:k:c:r:a:i:", 
-        ["help", "endpoint=", "key=", "cert=", "rootCA=", "action=", "clientid="])
+        "dhwe:k:c:r:a:i:t:", 
+        [
+            "help", 
+            "endpoint=", 
+            "key=", 
+            "cert=", 
+            "rootCA=", 
+            "action=", 
+            "clientid=",
+            "topic="
+        ])
         
     if len(opts) == 0:
         raise getopt.GetoptError("No input parameters!")
@@ -111,10 +121,14 @@ try:
             action = arg
         if opt in ("-i", "--clientid"):
             clientId = arg
+        if opt in ("-t", "--topic"):
+            topic = arg
             
 except getopt.GetoptError:
     print(usageInfo)
     exit(1)
+
+print ("Topic: %s" % topic)     
 
 #    
 # Missing configuration notification
@@ -151,16 +165,7 @@ else:
 streamHandler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 streamHandler.setFormatter(formatter)
-logger.addHandler(streamHandler)
-
-#
-# Specify topic
-# 
-
-topic = "sdk/test/Python"
-#if clientId != "":
-#    topic = topic + "/" + clientId
-print ("Topic: %s" % topic)    
+logger.addHandler(streamHandler)   
 
 #
 # Specify Client ID.
