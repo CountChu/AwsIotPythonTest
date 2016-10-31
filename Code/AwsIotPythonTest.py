@@ -86,7 +86,7 @@ privateKeyPath = ""
 debug = False                           # for -d option.
 action = ""                             # for -a option that is publish, subscribe, or default "".        
 clientId = ""                           # for -i option.
-topic = "sdk/test/Python"               # for -t option.
+topic = "sdk/test/temperature"          # for -t option.
 
 try:
     opts, args = getopt.getopt(
